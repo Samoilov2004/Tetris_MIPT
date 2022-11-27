@@ -1,0 +1,166 @@
+ def pauseScreen(): ## определяем экран паузы, который вызывается при нажатии на клавишу "P" 
+
+        pause = pygame.Surface(( 800, 600))   
+        pause.set_alpha(150) 
+        pause.fill(( 128 , 128,128))                        
+
+        display.blit(pause, (0, 0)) 
+
+ 
+
+  
+
+def runTetris(): 
+
+    field = create_field()
+
+    last_move_down = time.time()  # данные параметры last_... определяют время последнего изменения координаты, необходимо для ускорения перемещения зажатием клавишы, см ниже строка 220 
+
+    last_side_move = time.time() 
+
+    last_fall = time.time() 
+
+    going_down = False  
+
+    going_left = False
+
+    going_right = False 
+
+    points = 0 
+
+    level, fall_speed = calcSpeed(points) 
+
+    fallingFig = getNewFig() 
+
+    nextFig = getNewFig() 
+
+  
+
+     
+
+  
+
+def calcSpeed(points):  # вычисляем уровень сложности 
+
+    level = int(points / 1000) + 1 
+
+    fall_speed = 0.5 - (level * 0.05) # cначала будет медленно падать, потом суорость возрастет, по идее до 10 уровня дойти нереально 
+
+    return level, fall_speed  
+
+  
+
+def getNewFig():    # возвращает новую фигуру со случайным цветом и углом поворота 
+
+    shape = random.choice(list(figures.keys())) 
+
+    newFigure = {'shape': shape, 
+
+                'rotation': random.randint(0, len(figures[shape]) - 1), 
+
+                'x': int(field_w / 2) - int(figure_w / 2), 
+
+                'y': 0,
+                'color': random.randint(0, len(colors)-1)} 
+    return newFigure 
+
+  
+
+  
+
+def addTofield(field, fig): 
+
+    for x in range(figure_w): 
+
+        for y in range(figure_h): 
+
+            if figures[fig['shape']][fig['rotation']][y][x] != empty: 
+
+                field[x + fig['x']][y + fig['y']] = fig['color'] 
+
+  
+
+  
+
+  
+
+  
+
+def convertCoords(block_x, block_y): 
+
+    return (game_screen_Hpos + (block_x * block)), (game_screen_Vpos+ (block_y * block)) 
+
+  
+
+  
+
+def drawBlock(block_x, block_y, color, pixelx=None, pixely=None):   #отрисовка квадратных блоков, из которых состоят фигуры 
+
+    if color == empty: 
+
+        return 
+
+    if pixelx == None and pixely == None: 
+
+        pixelx, pixely = convertCoords(block_x, block_y) 
+
+    # следующие три функции отрисовывают блок ( квадратик 20Х20), в котором попиксельно отрисовывается два прямоугольника разных цветов и кружочек, если цвет черный, то ничего не будет видно, а иначе будет рисоваться фиурка 
+
+    pygame.draw.rect(display, colors[color], (pixelx + 1, pixely + 1, block - 1, block - 1), 0, 3) 
+
+    pygame.draw.rect(display, lightcolors[color], (pixelx + 1, pixely + 1, block - 4, block - 4), 0, 3) 
+
+  
+
+    pygame.draw.circle(display, colors[color], (pixelx + block / 2, pixely + block / 2), 5) # доотрисовка фигурки, добавление на нее кружочка 
+
+     
+
+def gamefield(field):   # граница игрового поля 
+
+    pygame.draw.rect(display, board_color, (game_screen_Hpos, game_screen_Vpos, (field_w * block) , (field_h * block)), 2) # 
+
+    for x in range(field_w): 
+
+        for y in range(field_h): 
+
+            pygame.draw.rect(display, white, (game_screen_Hpos+1+x*field_w,game_screen_Vpos+ y*field_h-1,field_w,field_h), 1) # отрисовка сетки
+
+            drawBlock(x, y, field[x][y]) 
+
+  
+
+     
+
+def drawFig(fig, pixelx=None, pixely=None): 
+
+    figToDraw = figures[fig['shape']][fig['rotation']] 
+
+    if pixelx == None and pixely == None:     
+
+        pixelx, pixely = convertCoords(fig['x'], fig['y']) 
+
+
+    for x in range(figure_w): 
+
+        for y in range(figure_h): 
+
+            if figToDraw[y][x] != empty: 
+
+                drawBlock(None, None, fig['color'], pixelx + (x * block), pixely + (y * block)) 
+
+  
+
+  
+
+def drawnextFig(fig):  # превью следующей фигуры 
+
+    nextSurf = basic_font.render('Следующая:', True, txt_color) 
+
+    nextRect = nextSurf.get_rect() 
+
+    nextRect.topleft = (window_w - 150, 180) 
+
+    display.blit(nextSurf, nextRect) 
+
+    drawFig(fig, pixelx=window_w-150, pixely=200) 
