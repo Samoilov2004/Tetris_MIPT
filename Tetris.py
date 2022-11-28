@@ -272,7 +272,7 @@ def addTofield(field, fig):
 def convertCoords(block_x, block_y): 
     return (game_screen_Hpos + (block_x * block)), (game_screen_Vpos+ (block_y * block))
    
-def drawBlock(block_x, block_y, color, pixelx=None, pixely=None):   #отрисовка квадратных блоков, из которых состоят фигуры 
+def Block(block_x, block_y, color, pixelx=None, pixely=None):   #отрисовка квадратных блоков, из которых состоят фигуры 
     if color == empty: 
         return 
     if pixelx == None and pixely == None: 
@@ -420,13 +420,3 @@ def main():
         
 if __name__ == '__main__':
 	main()
-
-    pausebSurf = basic_font.render('Пауза: пробел', True, info_color)
-    pausebRect = pausebSurf.get_rect()
-    pausebRect.topleft = (50, 220)
-    display.blit(pausebSurf, pausebRect)
-    
-    escbSurf = basic_font.render('Выход: Esc', True, info_color)
-    escbRect = escbSurf.get_rect()
-    escbRect.topleft = (50, 240)
-    display.blit(escbSurf, escbRect)
