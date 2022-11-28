@@ -489,7 +489,8 @@ def runTetris():
                     going_left = False
                     going_right = False
                     for i in range(1, field_h):
-                        if not checkPos(field, fallingFig, adjY=i):                              break 
+                        if not checkPos(field, fallingFig, adjY=i):                              
+				break 
                     fallingFig['y'] += i - 1
 
        
