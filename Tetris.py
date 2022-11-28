@@ -230,6 +230,196 @@ def drawInfo(points, level):
     levelRect = levelSurf.get_rect()
     levelRect.topleft = (50, 200)
     display.blit(levelSurf, levelRect)
+def pauseScreen(): 
+        pause = pygame.Surface(( 800, 600))   
+        pause.set_alpha(150) 
+        pause.fill(( 128 , 128,128))                        
+        display.blit(pause, (0, 0)) 
+        
+def runTetris(): 
+    field = create_field()
+    last_move_down = time.time()  # данные параметры last_... определяют время последнего изменения координаты, необходимо для ускорения перемещения зажатием клавишы, см ниже строка 220 
+    last_side_move = time.time() 
+    last_fall = time.time() 
+    going_down = False  
+    going_left = False
+    going_right = False 
+    points = 0 
+    level, fall_speed = calcSpeed(points) 
+    fallingFig = getNewFig() 
+    nextFig = getNewFig() 
+    
+def calcSpeed(points):  # вычисляем уровень сложности 
+    level = int(points / 1000) + 1 
+    fall_speed = 0.5 - (level * 0.05) # cначала будет медленно падать, потом скорость возрастет
+    return level, fall_speed  
+   
+def getNewFig():    # возвращает новую фигуру со случайным цветом и углом поворота 
+    shape = random.choice(list(figures.keys())) 
+    newFigure = {'shape': shape, 
+                'rotation': random.randint(0, len(figures[shape]) - 1), 
+                'x': int(field_w / 2) - int(figure_w / 2), 
+                'y': 0,
+                'color': random.randint(0, len(colors)-1)} 
+    return newFigure 
+   
+def addTofield(field, fig): 
+    for x in range(figure_w): 
+        for y in range(figure_h): 
+            if figures[fig['shape']][fig['rotation']][y][x] != empty: 
+                field[x + fig['x']][y + fig['y']] = fig['color'] 
+                
+def convertCoords(block_x, block_y): 
+    return (game_screen_Hpos + (block_x * block)), (game_screen_Vpos+ (block_y * block))
+   
+def drawBlock(block_x, block_y, color, pixelx=None, pixely=None):   #отрисовка квадратных блоков, из которых состоят фигуры 
+    if color == empty: 
+        return 
+    if pixelx == None and pixely == None: 
+        pixelx, pixely = convertCoords(block_x, block_y) 
+    # следующие три функции отрисовывают блок ( квадратик 20Х20), в котором попиксельно отрисовывается два прямоугольника разных цветов и кружочек, если цвет черный, то ничего не будет видно, а иначе будет рисоваться фиурка 
+    pygame.draw.rect(display, colors[color], (pixelx + 1, pixely + 1, block - 1, block - 1), 0, 3) 
+    pygame.draw.rect(display, lightcolors[color], (pixelx + 1, pixely + 1, block - 4, block - 4), 0, 3) 
+    pygame.draw.circle(display, colors[color], (pixelx + block / 2, pixely + block / 2), 5) # доотрисовка фигурки, добавление на нее кружочка 
+    
+def gamefield(field):   # граница игрового поля 
+    pygame.draw.rect(display, board_color, (game_screen_Hpos, game_screen_Vpos, (field_w * block) , (field_h * block)), 2) # 
+    for x in range(field_w): 
+        for y in range(field_h): 
+            pygame.draw.rect(display, white, (game_screen_Hpos+1+x*field_w,game_screen_Vpos+ y*field_h-1,field_w,field_h), 1) # отрисовка сетки
+            drawBlock(x, y, field[x][y])
+            
+def drawFig(fig, pixelx=None, pixely=None): 
+    figToDraw = figures[fig['shape']][fig['rotation']] 
+    if pixelx == None and pixely == None:     
+        pixelx, pixely = convertCoords(fig['x'], fig['y']) 
+    for x in range(figure_w): 
+        for y in range(figure_h): 
+            if figToDraw[y][x] != empty: 
+                drawBlock(None, None, fig['color'], pixelx + (x * block), pixely + (y * block)) 
+                
+def drawnextFig(fig):  # превью следующей фигуры 
+    nextSurf = basic_font.render('Следующая:', True, txt_color) 
+    nextRect = nextSurf.get_rect() 
+    nextRect.topleft = (window_w - 150, 180) 
+    display.blit(nextSurf, nextRect) 
+    drawFig(fig, pixelx=window_w-150, pixely=200)
+
+def runTetris():
+    field = create_field() 
+    last_move_down = time.time()  
+    last_side_move = time.time()
+    last_fall = time.time()     
+    going_down = False 
+    going_left = False 
+    going_right = False
+    points = 0 
+    level, fall_speed = calcSpeed(points) 
+    fallingFig = getNewFig()
+    nextFig = getNewFig()
+
+    while True: 
+        if fallingFig == None:
+            fallingFig = nextFig 
+            nextFig = getNewFig() 
+            last_fall = time.time() 
+            if not checkPos(field, fallingFig):
+                return 
+        quitGame()
+        for event in pygame.event.get(): 
+            if event.type == KEYUP: 
+                if event.key == K_SPACE: 
+                    pauseScreen()
+                    showText('Игра приостановлена')
+                    last_fall = time.time()
+                    last_move_down = time.time()
+                    last_side_move = time.time()
+                elif event.key == K_LEFT: 
+                    going_left = False
+                elif event.key == K_RIGHT: 
+                    going_right = False
+                elif event.key == K_DOWN:  
+                    going_down = False
+
+            elif event.type == KEYDOWN:
+                if event.key == K_LEFT and checkPos(field, fallingFig, adjX=-1): 
+                    fallingFig['x'] -= 1
+                    going_left = True
+                    going_right = False 
+                    last_side_move = time.time()
+                elif event.key == K_RIGHT and checkPos(field, fallingFig, adjX=1):
+                    fallingFig['x'] += 1 
+                    going_right = True
+                    going_left = False
+                    last_side_move = time.time()
+
+                elif event.key == K_UP:
+                    fallingFig['rotation'] = (fallingFig['rotation'] + 1) % len(figures[fallingFig['shape']]) 
+                    if not checkPos(field, fallingFig): 
+                        fallingFig['rotation'] = (fallingFig['rotation'] - 1) % len(figures[fallingFig['shape']])
+
+                elif event.key == K_DOWN:
+                    going_down = True
+                    if checkPos(field, fallingFig, adjY=1):                         fallingFig['y'] += 1
+                    last_move_down = time.time()
+
+                elif event.key == K_RETURN: 
+                    going_down = False
+                    going_left = False
+                    going_right = False
+                    for i in range(1, field_h):
+                        if not checkPos(field, fallingFig, adjY=i):                              break 
+                    fallingFig['y'] += i - 1
+
+       
+        if (going_left or going_right) and time.time() - last_side_move > side_move_time: 
+            if going_left and checkPos(field, fallingFig, adjX=-1): 
+                fallingFig['x'] -= 1
+            elif going_right and checkPos(field, fallingFig, adjX=1): 
+                fallingFig['x'] += 1
+            last_side_move = time.time() 
+
+        if going_down and time.time() - last_move_down > down_move_time and checkPos(field, fallingFig, adjY=1): 
+            fallingFig['y'] += 1
+            last_move_down = time.time()
+
+
+        if time.time() - last_fall > fall_speed: 
+            if not checkPos(field, fallingFig, adjY=1):
+                addTofield(field, fallingFig) 
+                points += clearCompleted(field) 
+                level, fall_speed = calcSpeed(points) 
+                fallingFig = None  
+            else: 
+                fallingFig['y'] += 1
+                last_fall = time.time()
+
+        display.fill(background_color)
+        drawTitle() 
+        gamefield(field)
+        drawInfo(points, level) 
+        drawnextFig(nextFig) 
+        if fallingFig != None:
+            drawFig(fallingFig)
+        pygame.display.update() 
+        fps_clock.tick(fps)
+        
+def main():
+    global fps_clock, display, basic_font, big_font
+    pygame.init()
+    fps_clock = pygame.time.Clock() ## указываем с какой частотой отрисовки кадров запускать игру, указывался параметр вверху в самом начале
+    display = pygame.display.set_mode((window_w, window_h)) # устанавливаем игровое окно
+    basic_font = pygame.font.SysFont('arial', 20) # устанавливаем базовый шрифт и его размер
+    big_font = pygame.font.SysFont('arial', 45) # устанавливаем шрифт и размер для больших текстов, например конец игры
+    pygame.display.set_caption('Тетрис') # Название, создаваемое окна
+    showText('Тетрис') # Название игры на экране
+    while True: # начинаем игру
+        runTetris()  # функция  игры
+        pauseScreen() # функция экрана ппаузы
+        showText('Конец игры') # вывод текста
+        
+if __name__ == '__main__':
+	main()
 
     pausebSurf = basic_font.render('Пауза: пробел', True, info_color)
     pausebRect = pausebSurf.get_rect()
